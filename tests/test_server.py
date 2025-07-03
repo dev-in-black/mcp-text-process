@@ -103,14 +103,20 @@ class TestServerEndpoints:
             "stream": False,
         }
         response = client.post("/text/batch", json=payload)
-        assert response.status_code == 500
+        # The server returns 200 but with error results in the response
+        assert response.status_code == 200
+        data = response.json()
+        assert "result" in data
+        # Check that the first result contains an error
+        assert len(data["result"]) == 1
+        assert "error" in data["result"][0]["metadata"]
 
     def test_streaming_endpoints(self):
         """Test that streaming endpoints return proper response type"""
         payload = {"text": "test text", "delimiter": " ", "stream": True}
         response = client.post("/text/split", json=payload)
         assert response.status_code == 200
-        assert "text/plain" in response.headers["content-type"]
+        assert "text/event-stream" in response.headers["content-type"]
 
     def test_invalid_regex_handling(self):
         """Test handling of invalid regex patterns"""

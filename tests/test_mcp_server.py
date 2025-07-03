@@ -21,17 +21,15 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_split_text_tool(self):
         """Test split_text MCP tool"""
-        from mcp_server import split_text, TextSplitArgs
+        from mcp_server import split_text
 
-        args = TextSplitArgs(
+        result = await split_text(
             text="This is a test. Another sentence! Final question?",
             delimiter=None,
             regex_pattern=None,
             max_chunks=None,
             stream=False,
         )
-
-        result = await split_text(args)
 
         assert "chunks" in result
         assert "count" in result
@@ -41,9 +39,9 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_find_replace_tool(self):
         """Test find_replace MCP tool"""
-        from mcp_server import find_replace, FindReplaceArgs
+        from mcp_server import find_replace
 
-        args = FindReplaceArgs(
+        result = await find_replace(
             text="hello world hello universe",
             find="hello",
             replace="hi",
@@ -52,8 +50,6 @@ class TestMCPServer:
             stream=False,
         )
 
-        result = await find_replace(args)
-
         assert "result" in result
         assert "hi world" in result["result"]
         assert result["operation"] == "find_replace"
@@ -61,17 +57,15 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_fuzzy_delete_tool(self):
         """Test fuzzy_delete MCP tool"""
-        from mcp_server import fuzzy_delete, FuzzyDeleteArgs
+        from mcp_server import fuzzy_delete
 
-        args = FuzzyDeleteArgs(
+        result = await fuzzy_delete(
             text="apple banana orange apple grape",
             target="apple",
             similarity_threshold=1.0,
             algorithm="levenshtein",
             stream=False,
         )
-
-        result = await fuzzy_delete(args)
 
         assert "result" in result
         assert "apple" not in result["result"]
@@ -80,17 +74,15 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_search_text_tool(self):
         """Test search_text MCP tool"""
-        from mcp_server import search_text, TextSearchArgs
+        from mcp_server import search_text
 
-        args = TextSearchArgs(
+        result = await search_text(
             text="The quick brown fox jumps over the lazy dog",
             query="fox",
             search_type="exact",
             case_sensitive=True,
             stream=False,
         )
-
-        result = await search_text(args)
 
         assert "results" in result
         assert "count" in result
@@ -101,16 +93,14 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_batch_process_tool(self):
         """Test batch_process MCP tool"""
-        from mcp_server import batch_process, BatchProcessArgs
+        from mcp_server import batch_process
 
-        args = BatchProcessArgs(
+        result = await batch_process(
             texts=["hello world", "hello universe"],
             operation="find_replace",
             parameters={"find": "hello", "replace": "hi", "case_sensitive": False},
             stream=False,
         )
-
-        result = await batch_process(args)
 
         assert "results" in result
         assert "count" in result
@@ -154,11 +144,9 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_streaming_enabled_responses(self):
         """Test tools with streaming enabled"""
-        from mcp_server import split_text, TextSplitArgs
+        from mcp_server import split_text
 
-        args = TextSplitArgs(text="This is a test.", stream=True)
-
-        result = await split_text(args)
+        result = await split_text(text="This is a test.", stream=True)
 
         assert result["streaming"] is True
         assert "sse_url" in result
@@ -169,10 +157,10 @@ class TestMCPServer:
     @pytest.mark.asyncio
     async def test_error_handling(self):
         """Test error handling in MCP tools"""
-        from mcp_server import find_replace, FindReplaceArgs
+        from mcp_server import find_replace
 
         # Test with invalid regex
-        args = FindReplaceArgs(
+        result = await find_replace(
             text="test text",
             find="[invalid",
             replace="replace",
@@ -180,19 +168,15 @@ class TestMCPServer:
             stream=False,
         )
 
-        result = await find_replace(args)
-
         assert "error" in result
         assert result["operation"] == "find_replace"
 
     @pytest.mark.asyncio
     async def test_empty_text_handling(self):
         """Test handling of empty text in MCP tools"""
-        from mcp_server import split_text, TextSplitArgs
+        from mcp_server import split_text
 
-        args = TextSplitArgs(text="", stream=False)
-
-        result = await split_text(args)
+        result = await split_text(text="", stream=False)
 
         assert "chunks" in result
         assert result["chunks"] == []
