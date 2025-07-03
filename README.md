@@ -2,7 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/your-username/mcp-text/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/mcp-text/actions/workflows/ci.yml)
 [![Docker Build](https://img.shields.io/docker/build/your-username/mcp-text-processor)](https://hub.docker.com/r/your-username/mcp-text-processor)
-[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A comprehensive Model Context Protocol (MCP) Python text processing server built with FastMCP and SSE streaming capabilities.
