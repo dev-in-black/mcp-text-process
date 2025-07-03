@@ -28,15 +28,21 @@ SSE_SERVER_URL = "http://localhost:8000"
 
 class TextSplitArgs(BaseModel):
     """Arguments for text splitting operation"""
+
     text: str = Field(..., description="Input text to split")
     delimiter: Optional[str] = Field(None, description="Custom delimiter for splitting")
-    regex_pattern: Optional[str] = Field(None, description="Regex pattern for splitting")
-    max_chunks: Optional[int] = Field(None, description="Maximum number of chunks to return")
+    regex_pattern: Optional[str] = Field(
+        None, description="Regex pattern for splitting"
+    )
+    max_chunks: Optional[int] = Field(
+        None, description="Maximum number of chunks to return"
+    )
     stream: bool = Field(False, description="Enable streaming response via SSE")
 
 
 class FindReplaceArgs(BaseModel):
     """Arguments for find and replace operation"""
+
     text: str = Field(..., description="Input text to process")
     find: str = Field(..., description="Text to find")
     replace: str = Field(..., description="Replacement text")
@@ -47,31 +53,34 @@ class FindReplaceArgs(BaseModel):
 
 class FuzzyDeleteArgs(BaseModel):
     """Arguments for fuzzy deletion operation"""
+
     text: str = Field(..., description="Input text to process")
     target: str = Field(..., description="Text to delete using fuzzy matching")
     similarity_threshold: float = Field(0.8, description="Similarity threshold (0-1)")
     algorithm: str = Field(
-        "levenshtein",
-        description="Similarity algorithm: levenshtein, fuzzy, semantic"
+        "levenshtein", description="Similarity algorithm: levenshtein, fuzzy, semantic"
     )
     stream: bool = Field(False, description="Enable streaming response via SSE")
 
 
 class TextSearchArgs(BaseModel):
     """Arguments for text search operation"""
+
     text: str = Field(..., description="Input text to search")
     query: str = Field(..., description="Search query")
-    search_type: str = Field("exact", description="Search type: exact, partial, wildcard, fuzzy")
+    search_type: str = Field(
+        "exact", description="Search type: exact, partial, wildcard, fuzzy"
+    )
     case_sensitive: bool = Field(True, description="Case sensitive search")
     stream: bool = Field(False, description="Enable streaming response via SSE")
 
 
 class BatchProcessArgs(BaseModel):
     """Arguments for batch processing operation"""
+
     texts: List[str] = Field(..., description="List of texts to process")
     operation: str = Field(
-        ...,
-        description="Operation type: split, find_replace, fuzzy_delete, search"
+        ..., description="Operation type: split, find_replace, fuzzy_delete, search"
     )
     parameters: Dict[str, Any] = Field(..., description="Operation parameters")
     stream: bool = Field(False, description="Enable streaming response via SSE")
@@ -83,7 +92,7 @@ async def split_text(
     delimiter: Optional[str] = None,
     regex_pattern: Optional[str] = None,
     max_chunks: Optional[int] = None,
-    stream: bool = False
+    stream: bool = False,
 ) -> Dict[str, Any]:
     """
     Split text using customizable delimiters and regex patterns.
@@ -106,7 +115,7 @@ async def split_text(
         delimiter=delimiter,
         regex_pattern=regex_pattern,
         max_chunks=max_chunks,
-        stream=stream
+        stream=stream,
     )
     try:
         if args.stream:
@@ -120,8 +129,8 @@ async def split_text(
                     "delimiter": args.delimiter,
                     "regex_pattern": args.regex_pattern,
                     "max_chunks": args.max_chunks,
-                    "stream": True
-                }
+                    "stream": True,
+                },
             }
 
         # Process directly
@@ -129,14 +138,14 @@ async def split_text(
             args.text,
             delimiter=args.delimiter,
             regex_pattern=args.regex_pattern,
-            max_chunks=args.max_chunks
+            max_chunks=args.max_chunks,
         )
 
         return {
             "chunks": result,
             "count": len(result),
             "original_length": len(args.text),
-            "operation": "split_text"
+            "operation": "split_text",
         }
 
     except Exception as e:
@@ -151,7 +160,7 @@ async def find_replace(
     replace: str,
     regex: bool = False,
     case_sensitive: bool = True,
-    stream: bool = False
+    stream: bool = False,
 ) -> Dict[str, Any]:
     """
     Find and replace text with support for regex patterns and case-insensitive matching.
@@ -175,7 +184,7 @@ async def find_replace(
         replace=replace,
         regex=regex,
         case_sensitive=case_sensitive,
-        stream=stream
+        stream=stream,
     )
     try:
         if args.stream:
@@ -190,8 +199,8 @@ async def find_replace(
                     "replace": args.replace,
                     "regex": args.regex,
                     "case_sensitive": args.case_sensitive,
-                    "stream": True
-                }
+                    "stream": True,
+                },
             }
 
         # Process directly
@@ -200,14 +209,14 @@ async def find_replace(
             args.find,
             args.replace,
             regex=args.regex,
-            case_sensitive=args.case_sensitive
+            case_sensitive=args.case_sensitive,
         )
 
         return {
             "result": result,
             "original_length": len(args.text),
             "processed_length": len(result),
-            "operation": "find_replace"
+            "operation": "find_replace",
         }
 
     except Exception as e:
@@ -221,7 +230,7 @@ async def fuzzy_delete(
     target: str,
     similarity_threshold: float = 0.8,
     algorithm: str = "levenshtein",
-    stream: bool = False
+    stream: bool = False,
 ) -> Dict[str, Any]:
     """
     Delete text using fuzzy matching algorithms like Levenshtein distance.
@@ -244,7 +253,7 @@ async def fuzzy_delete(
         target=target,
         similarity_threshold=similarity_threshold,
         algorithm=algorithm,
-        stream=stream
+        stream=stream,
     )
     try:
         if args.stream:
@@ -258,8 +267,8 @@ async def fuzzy_delete(
                     "target": args.target,
                     "similarity_threshold": args.similarity_threshold,
                     "algorithm": args.algorithm,
-                    "stream": True
-                }
+                    "stream": True,
+                },
             }
 
         # Process directly
@@ -267,7 +276,7 @@ async def fuzzy_delete(
             args.text,
             args.target,
             similarity_threshold=args.similarity_threshold,
-            algorithm=args.algorithm
+            algorithm=args.algorithm,
         )
 
         return {
@@ -277,7 +286,7 @@ async def fuzzy_delete(
             "target": args.target,
             "threshold": args.similarity_threshold,
             "algorithm": args.algorithm,
-            "operation": "fuzzy_delete"
+            "operation": "fuzzy_delete",
         }
 
     except Exception as e:
@@ -291,7 +300,7 @@ async def search_text(
     query: str,
     search_type: str = "exact",
     case_sensitive: bool = True,
-    stream: bool = False
+    stream: bool = False,
 ) -> Dict[str, Any]:
     """
     Search text using various matching algorithms.
@@ -315,7 +324,7 @@ async def search_text(
         query=query,
         search_type=search_type,
         case_sensitive=case_sensitive,
-        stream=stream
+        stream=stream,
     )
     try:
         if args.stream:
@@ -329,8 +338,8 @@ async def search_text(
                     "query": args.query,
                     "search_type": args.search_type,
                     "case_sensitive": args.case_sensitive,
-                    "stream": True
-                }
+                    "stream": True,
+                },
             }
 
         # Process directly
@@ -338,19 +347,21 @@ async def search_text(
             args.text,
             args.query,
             search_type=args.search_type,
-            case_sensitive=args.case_sensitive
+            case_sensitive=args.case_sensitive,
         )
 
         # Convert SearchResult objects to dictionaries
         search_results = []
         for result in results:
-            search_results.append({
-                "text": result.text,
-                "start": result.start,
-                "end": result.end,
-                "score": result.score,
-                "match_type": result.match_type
-            })
+            search_results.append(
+                {
+                    "text": result.text,
+                    "start": result.start,
+                    "end": result.end,
+                    "score": result.score,
+                    "match_type": result.match_type,
+                }
+            )
 
         return {
             "results": search_results,
@@ -358,7 +369,7 @@ async def search_text(
             "query": args.query,
             "search_type": args.search_type,
             "case_sensitive": args.case_sensitive,
-            "operation": "search_text"
+            "operation": "search_text",
         }
 
     except Exception as e:
@@ -368,10 +379,7 @@ async def search_text(
 
 @mcp.tool()
 async def batch_process(
-    texts: List[str],
-    operation: str,
-    parameters: Dict[str, Any],
-    stream: bool = False
+    texts: List[str], operation: str, parameters: Dict[str, Any], stream: bool = False
 ) -> Dict[str, Any]:
     """
     Process multiple texts in batch using any of the available operations.
@@ -389,10 +397,7 @@ async def batch_process(
     """
     # Create args object from parameters
     args = BatchProcessArgs(
-        texts=texts,
-        operation=operation,
-        parameters=parameters,
-        stream=stream
+        texts=texts, operation=operation, parameters=parameters, stream=stream
     )
     try:
         if args.stream:
@@ -405,34 +410,34 @@ async def batch_process(
                     "texts": args.texts,
                     "operation": args.operation,
                     "parameters": args.parameters,
-                    "stream": True
-                }
+                    "stream": True,
+                },
             }
 
         # Process directly
         results = await text_processor.batch_process(
-            args.texts,
-            args.operation,
-            args.parameters
+            args.texts, args.operation, args.parameters
         )
 
         # Convert ProcessResult objects to dictionaries
         batch_results = []
         for result in results:
-            batch_results.append({
-                "original_text": result.original_text,
-                "processed_text": result.processed_text,
-                "operation": result.operation,
-                "parameters": result.parameters,
-                "metadata": result.metadata
-            })
+            batch_results.append(
+                {
+                    "original_text": result.original_text,
+                    "processed_text": result.processed_text,
+                    "operation": result.operation,
+                    "parameters": result.parameters,
+                    "metadata": result.metadata,
+                }
+            )
 
         return {
             "results": batch_results,
             "count": len(batch_results),
             "operation": args.operation,
             "parameters": args.parameters,
-            "operation_type": "batch_process"
+            "operation_type": "batch_process",
         }
 
     except Exception as e:
@@ -441,7 +446,9 @@ async def batch_process(
 
 
 @mcp.tool()
-async def get_similarity(text1: str, text2: str, algorithm: str = "levenshtein") -> Dict[str, Any]:
+async def get_similarity(
+    text1: str, text2: str, algorithm: str = "levenshtein"
+) -> Dict[str, Any]:
     """
     Calculate similarity between two texts using specified algorithm.
 
@@ -456,7 +463,7 @@ async def get_similarity(text1: str, text2: str, algorithm: str = "levenshtein")
             "text1": text1,
             "text2": text2,
             "algorithm": algorithm,
-            "operation": "get_similarity"
+            "operation": "get_similarity",
         }
 
     except Exception as e:
@@ -477,39 +484,39 @@ async def get_server_info() -> Dict[str, Any]:
                 "delimiters": True,
                 "regex_patterns": True,
                 "smart_splitting": True,
-                "max_chunks": True
+                "max_chunks": True,
             },
             "find_replace": {
                 "regex": True,
                 "case_insensitive": True,
-                "multiple_replacements": True
+                "multiple_replacements": True,
             },
             "fuzzy_deletion": {
                 "algorithms": ["levenshtein", "fuzzy", "semantic"],
                 "configurable_threshold": True,
-                "phrase_matching": True
+                "phrase_matching": True,
             },
             "search": {
                 "types": ["exact", "partial", "wildcard", "fuzzy"],
                 "case_insensitive": True,
-                "result_scoring": True
+                "result_scoring": True,
             },
             "batch_processing": {
                 "all_operations": True,
                 "streaming": True,
-                "large_datasets": True
+                "large_datasets": True,
             },
             "streaming": {
                 "sse_support": True,
                 "real_time_progress": True,
-                "server_url": SSE_SERVER_URL
-            }
+                "server_url": SSE_SERVER_URL,
+            },
         },
-        "operation": "get_server_info"
+        "operation": "get_server_info",
     }
 
 
 if __name__ == "__main__":
     # Run the FastMCP server
     logger.info("Starting FastMCP Text Processing Server")
-    mcp.run(transport='sse')
+    mcp.run(transport="sse")

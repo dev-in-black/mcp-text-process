@@ -26,19 +26,26 @@ logger = logging.getLogger(__name__)
 
 class TextProcessRequest(BaseModel):
     """Base request model for text processing operations"""
+
     text: str = Field(..., description="Input text to process")
     stream: bool = Field(default=True, description="Enable streaming response")
 
 
 class SplitRequest(TextProcessRequest):
     """Request model for text splitting operations"""
+
     delimiter: Optional[str] = Field(default=None, description="Custom delimiter")
-    regex_pattern: Optional[str] = Field(default=None, description="Regex pattern for splitting")
-    max_chunks: Optional[int] = Field(default=None, description="Maximum number of chunks")
+    regex_pattern: Optional[str] = Field(
+        default=None, description="Regex pattern for splitting"
+    )
+    max_chunks: Optional[int] = Field(
+        default=None, description="Maximum number of chunks"
+    )
 
 
 class FindReplaceRequest(TextProcessRequest):
     """Request model for find and replace operations"""
+
     find: str = Field(..., description="Text to find")
     replace: str = Field(..., description="Replacement text")
     regex: bool = Field(default=False, description="Use regex matching")
@@ -47,23 +54,32 @@ class FindReplaceRequest(TextProcessRequest):
 
 class FuzzyDeleteRequest(TextProcessRequest):
     """Request model for fuzzy deletion operations"""
+
     target: str = Field(..., description="Text to delete")
-    similarity_threshold: float = Field(default=0.8, description="Similarity threshold (0-1)")
+    similarity_threshold: float = Field(
+        default=0.8, description="Similarity threshold (0-1)"
+    )
     algorithm: str = Field(default="levenshtein", description="Similarity algorithm")
 
 
 class SearchRequest(TextProcessRequest):
     """Request model for search operations"""
+
     query: str = Field(..., description="Search query")
-    search_type: str = Field(default="exact", description="Search type: exact, partial, wildcard, fuzzy")
+    search_type: str = Field(
+        default="exact", description="Search type: exact, partial, wildcard, fuzzy"
+    )
     case_sensitive: bool = Field(default=True, description="Case sensitive search")
 
 
 class BatchProcessRequest(BaseModel):
     """Request model for batch processing operations"""
+
     texts: List[str] = Field(..., description="List of texts to process")
     operation: str = Field(..., description="Operation type")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Operation parameters")
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict, description="Operation parameters"
+    )
     stream: bool = Field(default=True, description="Enable streaming response")
 
 
@@ -85,7 +101,7 @@ app = FastAPI(
     title="MCP Text Processing SSE Server",
     description="SSE streaming server for MCP text processing operations",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -111,9 +127,9 @@ async def root():
             "find_replace": "/text/find-replace",
             "fuzzy_delete": "/text/fuzzy-delete",
             "search": "/text/search",
-            "batch": "/text/batch"
+            "batch": "/text/batch",
         },
-        "note": "This server provides SSE streaming capabilities for the main MCP server"
+        "note": "This server provides SSE streaming capabilities for the main MCP server",
     }
 
 
@@ -127,7 +143,7 @@ async def split_text(request: SplitRequest):
                     request.text,
                     delimiter=request.delimiter,
                     regex_pattern=request.regex_pattern,
-                    max_chunks=request.max_chunks
+                    max_chunks=request.max_chunks,
                 )
             )
         else:
@@ -135,7 +151,7 @@ async def split_text(request: SplitRequest):
                 request.text,
                 delimiter=request.delimiter,
                 regex_pattern=request.regex_pattern,
-                max_chunks=request.max_chunks
+                max_chunks=request.max_chunks,
             )
             return {"result": result}
     except Exception as e:
@@ -154,7 +170,7 @@ async def find_replace(request: FindReplaceRequest):
                     request.find,
                     request.replace,
                     regex=request.regex,
-                    case_sensitive=request.case_sensitive
+                    case_sensitive=request.case_sensitive,
                 )
             )
         else:
@@ -163,7 +179,7 @@ async def find_replace(request: FindReplaceRequest):
                 request.find,
                 request.replace,
                 regex=request.regex,
-                case_sensitive=request.case_sensitive
+                case_sensitive=request.case_sensitive,
             )
             return {"result": result}
     except Exception as e:
@@ -181,7 +197,7 @@ async def fuzzy_delete(request: FuzzyDeleteRequest):
                     request.text,
                     request.target,
                     similarity_threshold=request.similarity_threshold,
-                    algorithm=request.algorithm
+                    algorithm=request.algorithm,
                 )
             )
         else:
@@ -189,7 +205,7 @@ async def fuzzy_delete(request: FuzzyDeleteRequest):
                 request.text,
                 request.target,
                 similarity_threshold=request.similarity_threshold,
-                algorithm=request.algorithm
+                algorithm=request.algorithm,
             )
             return {"result": result}
     except Exception as e:
@@ -207,7 +223,7 @@ async def search_text(request: SearchRequest):
                     request.text,
                     request.query,
                     search_type=request.search_type,
-                    case_sensitive=request.case_sensitive
+                    case_sensitive=request.case_sensitive,
                 )
             )
         else:
@@ -215,7 +231,7 @@ async def search_text(request: SearchRequest):
                 request.text,
                 request.query,
                 search_type=request.search_type,
-                case_sensitive=request.case_sensitive
+                case_sensitive=request.case_sensitive,
             )
             return {"result": result}
     except Exception as e:
@@ -230,16 +246,12 @@ async def batch_process(request: BatchProcessRequest):
         if request.stream:
             return EventSourceResponse(
                 sse_handler.stream_batch_process(
-                    request.texts,
-                    request.operation,
-                    request.parameters
+                    request.texts, request.operation, request.parameters
                 )
             )
         else:
             result = await text_processor.batch_process(
-                request.texts,
-                request.operation,
-                request.parameters
+                request.texts, request.operation, request.parameters
             )
             return {"result": result}
     except Exception as e:
@@ -255,10 +267,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "server:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
