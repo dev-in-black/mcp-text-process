@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    container_name: mcp-text-server
+    command: python mcp_server.py
+    ports:
+      - "8080:8080"
+    environment:
+      - MCP_TRANSPORT=sse
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  sse-server:
+    build: .
+    container_name: mcp-text-sse
+    command: python server.py
+    ports:
+      - "8000:8000"
+    environment:
+      - FASTAPI_HOST=0.0.0.0
+      - FASTAPI_PORT=8000
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - mcp-server
+
+volumes:
+  logs:

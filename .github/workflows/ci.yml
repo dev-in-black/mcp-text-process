@@ -1,0 +1,198 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-asyncio black flake8 pylint
+
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Lint with pylint
+      run: |
+        pylint --exit-zero *.py
+
+    - name: Check code formatting with black
+      run: |
+        black --check --diff .
+
+    - name: Run tests with pytest
+      run: |
+        pytest tests/ -v --cov=. --cov-report=xml --cov-report=html
+
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Test MCP Server startup
+      run: |
+        timeout 10s python mcp_server.py || code=$?
+        if [[ $code -ne 124 && $code -ne 0 ]]; then
+          echo "MCP server failed to start"
+          exit 1
+        fi
+        echo "MCP server started successfully"
+
+    - name: Test FastAPI Server startup
+      run: |
+        pip install uvicorn
+        timeout 5s uvicorn server:app --host 0.0.0.0 --port 8000 || code=$?
+        if [[ $code -ne 124 && $code -ne 0 ]]; then
+          echo "FastAPI server failed to start"
+          exit 1
+        fi
+        echo "FastAPI server started successfully"
+
+  security:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+
+    - name: Run bandit security check
+      run: |
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . || true
+
+    - name: Check for known security vulnerabilities
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check || true
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [test, build]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -t mcp-text-processor:latest .
+
+    - name: Test Docker image - MCP Server
+      run: |
+        # Test MCP server
+        docker run --rm -d --name test-mcp -p 8080:8080 mcp-text-processor:latest python mcp_server.py
+        sleep 15
+        # Check if MCP server is running (it runs indefinitely)
+        docker ps | grep test-mcp || exit 1
+        docker stop test-mcp
+
+    - name: Test Docker image - SSE Server
+      run: |
+        # Test SSE server with health check
+        docker run --rm -d --name test-sse -p 8000:8000 mcp-text-processor:latest python server.py
+        sleep 15
+        # Test health endpoint
+        curl -f http://localhost:8000/health || exit 1
+        docker stop test-sse
+
+    - name: Test Docker Compose
+      run: |
+        # Test full docker-compose setup
+        docker-compose up -d
+        sleep 30
+        # Test both services
+        curl -f http://localhost:8000/health || exit 1
+        docker-compose ps | grep "Up" | wc -l | grep -q "2" || exit 1
+        docker-compose down
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [test, build, security, docker]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+        echo "## Changes" >> $GITHUB_OUTPUT
+        git log --pretty=format:"- %s" $(git describe --tags --abbrev=0)..HEAD >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+        draft: false
+        prerelease: false
