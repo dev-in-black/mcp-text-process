@@ -1,8 +1,8 @@
 # MCP Text Processing Server
 
-[![CI/CD Pipeline](https://github.com/your-username/mcp-text/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/mcp-text/actions/workflows/ci.yml)
-[![Docker Build](https://img.shields.io/docker/build/your-username/mcp-text-processor)](https://hub.docker.com/r/your-username/mcp-text-processor)
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
+[![Docker Build and Push](https://github.com/dev-in-black/mcp-text-process/actions/workflows/docker-build-push.yml/badge.svg)](https://github.com/dev-in-black/mcp-text-process/actions/workflows/docker-build-push.yml)
+[![Docker Image Size](https://img.shields.io/docker/image-size/ghcr.io/dev-in-black/mcp-text-process/latest)](https://github.com/dev-in-black/mcp-text-process/pkgs/container/mcp-text-process)
+[![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A comprehensive Model Context Protocol (MCP) Python text processing server built with FastMCP and SSE streaming capabilities.
@@ -99,7 +99,31 @@ Calculate similarity between texts.
 
 ## Docker Usage
 
-### Single Container
+### Using Pre-built Images (Recommended)
+
+The Docker images are automatically built and published to GitHub Container Registry:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/dev-in-black/mcp-text-process:latest
+
+# Run MCP server
+docker run -p 8080:8080 ghcr.io/dev-in-black/mcp-text-process:latest python mcp_server.py
+
+# Run SSE server
+docker run -p 8000:8000 ghcr.io/dev-in-black/mcp-text-process:latest python server.py
+
+# Run both servers with Docker Compose
+docker-compose up -d
+```
+
+### Available Tags
+- `latest` - Latest stable release from main branch
+- `main` - Latest from main branch
+- `v*` - Specific version releases
+- `<branch>-<sha>` - Specific commit builds
+
+### Building Locally
 ```bash
 # Build image
 docker build -t mcp-text-processor .
@@ -122,6 +146,12 @@ docker-compose logs -f
 # Stop services
 docker-compose down
 ```
+
+### Multi-Architecture Support
+The Docker images support both `amd64` and `arm64` architectures, making them suitable for:
+- x86-64 servers and development machines
+- Apple Silicon Macs (M1/M2)
+- ARM-based cloud instances
 
 ## API Endpoints
 

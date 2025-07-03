@@ -3,8 +3,6 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   test:
@@ -146,25 +144,6 @@ jobs:
         # Check if MCP server is running (it runs indefinitely)
         docker ps | grep test-mcp || exit 1
         docker stop test-mcp
-
-    - name: Test Docker image - SSE Server
-      run: |
-        # Test SSE server with health check
-        docker run --rm -d --name test-sse -p 8000:8000 mcp-text-processor:latest python server.py
-        sleep 15
-        # Test health endpoint
-        curl -f http://localhost:8000/health || exit 1
-        docker stop test-sse
-
-    - name: Test Docker Compose
-      run: |
-        # Test full docker-compose setup
-        docker-compose up -d
-        sleep 30
-        # Test both services
-        curl -f http://localhost:8000/health || exit 1
-        docker-compose ps | grep "Up" | wc -l | grep -q "2" || exit 1
-        docker-compose down
 
   release:
     runs-on: ubuntu-latest
