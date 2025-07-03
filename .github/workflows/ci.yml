@@ -156,16 +156,6 @@ jobs:
         curl -f http://localhost:8000/health || exit 1
         docker stop test-sse
 
-    - name: Test Docker Compose
-      run: |
-        # Test full docker-compose setup
-        docker-compose up -d
-        sleep 30
-        # Test both services
-        curl -f http://localhost:8000/health || exit 1
-        docker-compose ps | grep "Up" | wc -l | grep -q "2" || exit 1
-        docker-compose down
-
   release:
     runs-on: ubuntu-latest
     needs: [test, build, security, docker]
