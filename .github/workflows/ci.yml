@@ -147,15 +147,6 @@ jobs:
         docker ps | grep test-mcp || exit 1
         docker stop test-mcp
 
-    - name: Test Docker image - SSE Server
-      run: |
-        # Test SSE server with health check
-        docker run --rm -d --name test-sse -p 8000:8000 mcp-text-processor:latest python server.py
-        sleep 15
-        # Test health endpoint
-        curl -f http://localhost:8000/health || exit 1
-        docker stop test-sse
-
   release:
     runs-on: ubuntu-latest
     needs: [test, build, security, docker]

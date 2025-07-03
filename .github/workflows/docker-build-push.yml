@@ -10,6 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  ORGRANITION: dev-in-black
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -34,13 +35,13 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.PAT }}
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.ORGRANITION }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -72,7 +73,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-name: ${{ env.REGISTRY }}/${{ env.ORGRANITION }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
@@ -82,7 +83,7 @@ jobs:
           # Test the built image
           docker run --rm -d --name test-container \
             -p 8000:8000 -p 8080:8080 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.ORGRANITION }}/${{ env.IMAGE_NAME }}:latest
           
           # Wait for container to start
           sleep 30
@@ -97,7 +98,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: anchore/scan-action@v3
         with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          image: ${{ env.REGISTRY }}/${{ env.ORGRANITION }}/${{ env.IMAGE_NAME }}:latest
           fail-build: false
           severity-cutoff: high
           acs-report-enable: true
