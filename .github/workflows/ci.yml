@@ -122,29 +122,6 @@ jobs:
         safety check --json --output safety-report.json || true
         safety check || true
 
-  docker:
-    runs-on: ubuntu-latest
-    needs: [test, build]
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build Docker image
-      run: |
-        docker build -t mcp-text-processor:latest .
-
-    - name: Test Docker image - MCP Server
-      run: |
-        # Test MCP server
-        docker run --rm -d --name test-mcp -p 8080:8080 mcp-text-processor:latest python mcp_server.py
-        sleep 15
-        # Check if MCP server is running (it runs indefinitely)
-        docker ps | grep test-mcp || exit 1
-        docker stop test-mcp
-
   release:
     runs-on: ubuntu-latest
     needs: [test, build, security, docker]

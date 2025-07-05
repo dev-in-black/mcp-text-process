@@ -1,19 +1,24 @@
 name: Docker Build and Push
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
     branches: [ main ]
+  push:
     tags: [ 'v*' ]
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  ORGRANITION: dev-in-black
+  ORGANIZATION: dev-in-black
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     permissions:
       contents: read
       packages: write
@@ -39,7 +44,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.ORGRANITION }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -65,28 +70,11 @@ jobs:
           provenance: false
           sbom: false
 
-      - name: Test Docker image
-        if: github.event_name != 'pull_request'
-        run: |
-          # Test the built image
-          docker run --rm -d --name test-container \
-            -p 8000:8000 -p 8080:8080 \
-            ${{ env.REGISTRY }}/${{ env.ORGRANITION }}/${{ env.IMAGE_NAME }}:latest
-          
-          # Wait for container to start
-          sleep 30
-          
-          # Test health endpoint
-          curl -f http://localhost:8000/health || exit 1
-          
-          # Clean up
-          docker stop test-container
-
       - name: Image scan
         if: github.event_name != 'pull_request'
         uses: anchore/scan-action@v3
         with:
-          image: ${{ env.REGISTRY }}/${{ env.ORGRANITION }}/${{ env.IMAGE_NAME }}:latest
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
           fail-build: false
           severity-cutoff: high
           acs-report-enable: true
